@@ -9,8 +9,10 @@ const gradeSelect = document.getElementById("grade");
 const referenceTable = document.getElementById('dataReferensiTable');
 const referenceInputs = referenceTable ? referenceTable.querySelectorAll('input') : [];
 const exportHomeTableBtn = document.getElementById('exportHomeTableBtn');
-const exportTable2Btn = document.getElementById('exportTable2Btn');
+const exportTable2Btn = document.getElementById('exportTable2Btn'); // DIUBAH/DITAMBAH
 const exportTable3Btn = document.getElementById('exportTable3Btn');
+const exportAnalisisXLSXBtn = document.getElementById("exportAnalisisXLSX");
+
 const nilaiDBKBInput = document.getElementById("nilaiDBKB");
 const noResultsText = document.getElementById('noResultsText');
 
@@ -19,14 +21,20 @@ const gradeInputJudul = document.getElementById("gradeInputJudul");
 const analisisTableBody3 = document.getElementById("analisisTableBody3");
 const analisisTable3 = document.getElementById("analisisDataTable3");
 
+// Elemen untuk analisis.html (Formulir ZNT)
+const alamatObjekInput = document.getElementById("alamatObjekInput");
+const alamatDesaInput = document.getElementById("alamatDesaInput");
+const kodeZNTInput = document.getElementById("kodeZNTInput");
+const gradeInputDropdown = document.getElementById("gradeInputDropdown");
+
+
 // --- Data Storage (shared) ---
 let propertis = JSON.parse(localStorage.getItem('propertiData')) || [];
 let dataReferensi = JSON.parse(localStorage.getItem('dataReferensi')) || {};
 
 // URL Web App Google Apps Script
-const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxeuSBClmqXkleTp8n85Do2cbVzRyovFxSAe25IUwXrjjjAuw71VT0U2F7IyWvwWJTqww/exec"; // ganti dengan URL Web App kamu
+const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz-9B6IgyHtjeiG_0VqoAeaCXkzVJeKP5ex05QgHpUhzMUEC8QZ4dWzi1DsoAyKuxbI/exec"; // ganti dengan URL Web App kamu
 
-// Fungsi untuk kirim data ke Google Sheets (digunakan untuk TAMBAH data baru)
 // Fungsi untuk kirim data ke Google Sheets (digunakan untuk TAMBAH data baru)
 function syncToGoogleSheets(data) {
     // ✅ Tambahkan property 'action: "insert"'
@@ -36,17 +44,15 @@ function syncToGoogleSheets(data) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ ...data, action: "insert" }) // Data baru harus menyertakan action: "insert"
     })
-    .then(res => res.text())
-    .then(txt => {
-        console.log("Respon server (Tambah):", txt);
-        // ✅ KRUSIAL: Muat ulang data dari Sheets setelah operasi POST sukses
-        loadFromGoogleSheets(); 
-    })
-    .catch(err => console.error("Gagal sync ke Google Sheets:", err));
+        .then(res => res.text())
+        .then(txt => {
+            console.log("Respon server (Tambah):", txt);
+            // ✅ KRUSIAL: Muat ulang data dari Sheets setelah operasi POST sukses
+            loadFromGoogleSheets();
+        })
+        .catch(err => console.error("Gagal sync ke Google Sheets:", err));
 }
 
-
-// Fungsi untuk ambil data dari Google Sheets
 // Fungsi untuk ambil data dari Google Sheets (DIREVISI)
 function loadFromGoogleSheets() {
     fetch(GOOGLE_APPS_SCRIPT_URL)
@@ -54,12 +60,12 @@ function loadFromGoogleSheets() {
         .then(data => {
             // 1. Simpan data terbaru ke variabel global
             propertis = data;
-            
+
             // 2. Simpan ke localStorage (untuk Form 2 & 3)
-            localStorage.setItem('propertiData', JSON.stringify(data)); 
+            localStorage.setItem('propertiData', JSON.stringify(data));
 
             // 3. ✅ KRUSIAL: Render ulang tabel dengan data baru
-            renderPropertiTable(); 
+            renderPropertiTable();
         })
         .catch(err => console.error("Gagal ambil data dari Google Sheets:", err));
 }
@@ -79,7 +85,7 @@ let marker;
 
 // --- Utility Functions ---
 function generateUUID() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
         var r = Math.random() * 16 | 0,
             v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
@@ -130,7 +136,7 @@ function loadReferenceData() {
 
 // --- Form Handling (FINAL DAN BENAR) ---
 if (propertiForm) {
-    propertiForm.addEventListener("submit", function(event) {
+    propertiForm.addEventListener("submit", function (event) {
         event.preventDefault();
 
         let newProperti = null;
@@ -169,13 +175,13 @@ if (propertiForm) {
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({ ...newProperti, action: "update" })
                 })
-                .then(res => res.text())
-                .then(txt => {
-                    console.log("Respon update:", txt);
-                    // ✅ KRUSIAL: Muat ulang data setelah UPDATE sukses
-                    loadFromGoogleSheets(); 
-                })
-                .catch(err => console.error("Gagal update ke Google Sheets:", err));
+                    .then(res => res.text())
+                    .then(txt => {
+                        console.log("Respon update:", txt);
+                        // ✅ KRUSIAL: Muat ulang data setelah UPDATE sukses
+                        loadFromGoogleSheets();
+                    })
+                    .catch(err => console.error("Gagal update ke Google Sheets:", err));
             }
             editModeId = null;
 
@@ -298,8 +304,6 @@ function editProperti(id) {
     }
 }
 
-// --- Edit/Delete Functions (home.html specific) ---
-
 // ... (Fungsi editProperti tetap sama)
 
 function deleteProperti(id) {
@@ -321,25 +325,25 @@ function deleteProperti(id) {
 function syncDeleteToGoogleSheets(id) {
     // ⚠️ Pastikan ini adalah fungsi ini yang Anda gunakan, dan hapus duplikat lainnya!
     fetch(GOOGLE_APPS_SCRIPT_URL + "?action=delete&id=" + id, {
-        method: "GET", 
+        method: "GET",
     })
-    .then(res => {
-        if (!res.ok) {
-            throw new Error(`HTTP error! Status: ${res.status}`);
-        }
-        return res.text();
-    })
-    .then(txt => {
-        console.log("Respon server Hapus:", txt);
-        // ✅ Setelah sukses, muat ulang data dari Sheets untuk memastikan sinkronisasi penuh
-        loadFromGoogleSheets(); 
-    })
-    .catch(err => {
-        console.error("Gagal hapus dari Google Sheets:", err);
-        // 🚨 Jika gagal, panggil ulang loadFromGoogleSheets() untuk menarik kembali data yang gagal dihapus dari Sheets
-        loadFromGoogleSheets(); 
-        createModal("Gagal menghapus data dari server. Silakan coba lagi.", () => {}); // Beri notifikasi ke user
-    });
+        .then(res => {
+            if (!res.ok) {
+                throw new Error(`HTTP error! Status: ${res.status}`);
+            }
+            return res.text();
+        })
+        .then(txt => {
+            console.log("Respon server Hapus:", txt);
+            // ✅ Setelah sukses, muat ulang data dari Sheets untuk memastikan sinkronisasi penuh
+            loadFromGoogleSheets();
+        })
+        .catch(err => {
+            console.error("Gagal hapus dari Google Sheets:", err);
+            // 🚨 Jika gagal, panggil ulang loadFromGoogleSheets() untuk menarik kembali data yang gagal dihapus dari Sheets
+            loadFromGoogleSheets();
+            createModal("Gagal menghapus data dari server. Silakan coba lagi.", () => { }); // Beri notifikasi ke user
+        });
 }
 
 // --- Modal Kustom (untuk mengganti alert/confirm) ---
@@ -446,6 +450,51 @@ function renderAnalisisTable() {
 }
 
 // =========================================================================
+// --- FUNGSI BARU: Sinkronisasi Formulir 2 ke Google Sheets (Sheet2) ---
+// =========================================================================
+function syncFormulir2ToGoogleSheets() {
+    // Gunakan propertis yang sudah dimuat secara global
+    const dataToSend = propertis.map(data => {
+        const jenisAdjusted = calculateJenisAdjusted(data.jenis);
+        const waktuAdjusted = calculateWaktuAdjusted(data.tanggal);
+        const hargaWajar = calculateHargaWajar(parseFloat(data.hargaTransaksi), jenisAdjusted, waktuAdjusted);
+        const selisihNilai = hargaWajar - (parseFloat(data.nilaiDBKB) || 0);
+        const hargaWajarPerM2 = (data.luas > 0) ? selisihNilai / parseFloat(data.luas) : 0;
+
+        return {
+            sheet: "Formulir2", // KRUSIAL untuk Apps Script doPost
+            alamat: data.alamatObjekPajak,
+            nop: data.blokNop,
+            kodeZNT: data.kodeZNT,
+            luas: data.luas,
+            harga: data.hargaTransaksi,
+            jenisData: data.jenis,
+            tanggal: data.tanggal,
+            penyesuaianJenis: jenisAdjusted,
+            penyesuaianWaktu: waktuAdjusted,
+            nilaiWajarTransaksi: hargaWajar,
+            luasBangunan: data.luasBangunan,
+            dbkb: data.nilaiDBKB,
+            nilaiWajarBumi: selisihNilai,
+            nilaiWajarPerM2: hargaWajarPerM2
+        };
+    });
+
+    // Kirim data satu per satu
+    dataToSend.forEach(data => {
+        fetch(GOOGLE_APPS_SCRIPT_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data)
+        })
+            .then(res => res.text())
+            .then(txt => console.log("Respon server Formulir 2:", txt))
+            .catch(err => console.error("Gagal sync Formulir 2 ke Google Sheets:", err));
+    });
+}
+
+// =========================================================================
 // --- Formulir 3 Specific JavaScript ---
 // =========================================================================
 function renderAnalisisTable3() {
@@ -534,205 +583,284 @@ function renderAnalisisTable3() {
         row.insertCell().textContent = bentukTanahAdjusted;
         row.insertCell().textContent = new Intl.NumberFormat('id-ID').format(ketinggianAdjusted);
         row.insertCell().textContent = kepemilikanAdjusted;
-        
+
         row.insertCell().textContent = new Intl.NumberFormat('id-ID').format(nilaiWajarObjek3);
-        
+
         row.insertCell().textContent = new Intl.NumberFormat('id-ID').format(rataRataHargaWajarM2);
     });
 }
+
+// =========================================================================
+// --- FUNGSI BARU: Sinkronisasi Analisis ZNT (Formulir 3) ke Google Sheets (Sheet3) ---
+// =========================================================================
+function syncAnalisisToGoogleSheets(alamatObjek, desa, znt, grade) {
+    const data = {
+        sheet: "Analisis", // KRUSIAL untuk Apps Script doPost
+        alamatObjek: alamatObjek,
+        desa: desa,
+        znt: znt,
+        grade: grade
+    };
+
+    fetch(GOOGLE_APPS_SCRIPT_URL, {
+        method: "POST",
+        mode: "no-cors",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+    })
+        .then(res => res.text())
+        .then(txt => console.log("Respon server Analisis ZNT:", txt))
+        .catch(err => console.error("Gagal sync Analisis ZNT ke Google Sheets:", err));
+}
+
 // === Analisis.html (Analisis ZNT) - REPLACE THIS BLOCK IN script.js ===
 document.addEventListener('DOMContentLoaded', () => {
+
+    // ================= HOME =================
+
+    if (propertiForm) {
+        populateGradeDropdown();
+        initializeMap();
+        loadReferenceData();
+        loadFromGoogleSheets(); // Ambil data dari Sheets saat load
+        referenceInputs.forEach(input => input.addEventListener('change', saveReferenceData));
+        if (exportHomeTableBtn) {
+            exportHomeTableBtn.addEventListener('click', () => {
+                exportTableToCSV('propertiDataTable', 'data_properti_input.csv');
+            });
+        }
+    }
+
+    // --- FORMULIR 2 ---
+    if (document.getElementById("analisisDataTable")) {
+        dataReferensi = JSON.parse(localStorage.getItem('dataReferensi')) || {};
+        propertis = JSON.parse(localStorage.getItem('propertiData')) || [];
+
+        // 🔹 Render langsung dari localStorage dulu agar tampil instan
+        renderAnalisisTable();
+
+        // 🔹 Lalu ambil versi terbaru dari Google Sheets (jaga sinkronisasi)
+        loadFromGoogleSheets();
+
+        const exportTable2Btn = document.getElementById('exportTable2Btn'); // AMBIL TOMBOL EKSPOR
+        if (exportTable2Btn) {
+            exportTable2Btn.addEventListener('click', () => {
+                // 1. Ekspor ke CSV
+                exportTableToCSV('analisisDataTable', 'analisis_nilai_pasar_wajar.csv');
+                // 2. Sinkronisasi ke Google Sheets (Sheet2)
+                syncFormulir2ToGoogleSheets();
+                alert("Data Formulir 2 berhasil diekspor ke CSV dan disinkronkan ke Sheet2 Google Drive.");
+            });
+        }
+    }
+
+     // ================= ANALISIS ZNT =================
     const analisisTable = document.getElementById("analisisDataTable5");
-    if (!analisisTable) {
-        console.error("Elemen tabel analisis tidak ditemukan!");
-        return;
-    }
 
-    const alamatObjekInput = document.getElementById("alamatObjekInput");
-    const alamatDesaInput = document.getElementById("alamatDesaInput");
-    const kodeZNTInput = document.getElementById("kodeZNTInput");
-    const gradeInputDropdown = document.getElementById("gradeInputDropdown");
+    // Identifikasi jika kita berada di halaman analisis.html
+    if (analisisTable && document.getElementById("alamatObjekInput")) {
+        const alamatObjekInput = document.getElementById("alamatObjekInput");
+        const alamatDesaInput = document.getElementById("alamatDesaInput");
+        const kodeZNTInput = document.getElementById("kodeZNTInput");
+        const gradeInputDropdown = document.getElementById("gradeInputDropdown");
+        const alamatSelects = [
+            document.getElementById("alamat1Select"),
+            document.getElementById("alamat2Select"),
+            document.getElementById("alamat3Select"),
+            document.getElementById("alamat4Select"),
+            document.getElementById("alamat5Select")
+        ];
+        const showAnalysisBtn = document.getElementById("showAnalysisBtn");
+        const analisisTableBody5 = document.getElementById("analisisTableBody5");
+        const historyListEl = document.getElementById("historyList");
+        const clearHistoryBtn = document.getElementById("clearHistoryBtn");
 
-    const alamatSelects = [
-        document.getElementById("alamat1Select"),
-        document.getElementById("alamat2Select"),
-        document.getElementById("alamat3Select"),
-        document.getElementById("alamat4Select"),
-        document.getElementById("alamat5Select")
-    ];
+        // Load data Riwayat dari LocalStorage
+        let historyAnalisis = JSON.parse(localStorage.getItem('historyAnalisisZNT')) || [];
 
-    const showAnalysisBtn = document.getElementById("showAnalysisBtn");
-    const analisisTableBody5 = document.getElementById("analisisTableBody5");
-    const tableContainer = document.querySelector(".table-container");
+        // Fungsi Render List Riwayat
+        function renderHistoryList() {
+            if (!historyListEl) return;
+            historyListEl.innerHTML = "";
 
-    // Ambil data properti dan referensi dari localStorage (atau kosong)
-    let propertis = [];
-    try {
-        const data = localStorage.getItem("propertiData");
-        propertis = data ? JSON.parse(data) : [];
-    } catch (e) {
-        console.error("Gagal memuat data properti:", e);
-        propertis = [];
-    }
-    const dataReferensiLocal = JSON.parse(localStorage.getItem('dataReferensi')) || {};
-
-    // Isi dropdown alamat pembanding
-    alamatSelects.forEach(select => {
-        if (!select) return;
-        select.innerHTML = '<option value="">-- Pilih Alamat --</option>';
-        propertis.forEach(p => {
-            if (p.id && p.alamatObjekPajak) {
-                const option = document.createElement("option");
-                option.value = p.id;
-                option.textContent = p.alamatObjekPajak;
-                select.appendChild(option);
-            }
-        });
-    });
-
-    // Header hasil
-    let resultHeader = document.getElementById("analysisResultHeader");
-    if (!resultHeader) {
-        resultHeader = document.createElement("h3");
-        resultHeader.id = "analysisResultHeader";
-        resultHeader.style.textAlign = "center";
-        resultHeader.style.marginTop = "1rem";
-        resultHeader.style.marginBottom = "1rem";
-        resultHeader.textContent = "Pilih data untuk memulai Analisis ZNT";
-        if (tableContainer && tableContainer.parentNode) {
-            tableContainer.parentNode.insertBefore(resultHeader, tableContainer);
-        }
-    }
-
-    // Helper: baca grade (toleran ke format "Grade X" atau "X")
-    function parseGrade(value) {
-        if (value === null || value === undefined) return 0;
-        const digits = String(value).match(/\d+/);
-        return digits ? parseInt(digits[0], 10) : 0;
-    }
-
-    // Helper: hitung nilai wajar bumi per m2 menggunakan fungsi yang ada (jenis + waktu)
-    function computeNilaiWajarBumiPerM2(dataItem) {
-        // Gunakan fungsi calculateJenisAdjusted, calculateWaktuAdjusted, calculateHargaWajar yang sudah ada
-        const jenisAdjusted = calculateJenisAdjusted(dataItem.jenis);
-        const waktuAdjusted = calculateWaktuAdjusted(dataItem.tanggal);
-        const hargaWajar = calculateHargaWajar(dataItem.hargaTransaksi, jenisAdjusted, waktuAdjusted);
-        const luas = parseFloat(dataItem.luas) || 0;
-        const nilaiDBKB = parseFloat(dataItem.nilaiDBKB) || 0;
-        if (luas > 0) {
-            return (hargaWajar - nilaiDBKB) / luas;
-        }
-        return 0;
-    }
-
-    // Aksi tombol "Nilai"
-    if (showAnalysisBtn) {
-        showAnalysisBtn.addEventListener("click", () => {
-            analisisTableBody5.innerHTML = "";
-
-            const objekAlamat = (alamatObjekInput && alamatObjekInput.value.trim()) || '';
-            const objekDesa = (alamatDesaInput && alamatDesaInput.value.trim()) || '';
-            const objekKodeZNT = (kodeZNTInput && kodeZNTInput.value.trim()) || '';
-            const objekGrade = parseInt(gradeInputDropdown.value) || 0;
-
-            if (!objekAlamat || isNaN(objekGrade) || objekGrade <= 0) {
-                alert("Harap lengkapi Alamat dan Grade Lokasi objek yang akan dinilai (1-10).");
+            if (historyAnalisis.length === 0) {
+                historyListEl.innerHTML = '<p class="text-sm text-gray-400 text-center py-4 italic">Belum ada riwayat.</p>';
                 return;
             }
 
-            const selectedIds = alamatSelects.map(s => s ? s.value : '').filter(id => id);
-            if (selectedIds.length === 0) {
-                analisisTableBody5.innerHTML = `<tr><td colspan="12" class="text-center text-gray-500">Tidak ada objek pembanding yang dipilih.</td></tr>`;
-                resultHeader.textContent = `Analisis untuk Objek: ${objekAlamat} - Harap pilih minimal satu pembanding.`;
-                return;
-            }
+            historyAnalisis.forEach((item, index) => {
+                const itemDiv = document.createElement("div");
+                itemDiv.className = "history-item p-3 border rounded-lg text-sm transition-all mb-2 shadow-sm bg-white";
+                itemDiv.innerHTML = `
+                    <div class="font-bold text-gray-700 truncate">${item.objek.alamat}</div>
+                    <div class="text-[10px] text-gray-400 flex justify-between">
+                        <span>ZNT: ${item.objek.znt || '-'} | Grade: ${item.objek.grade}</span>
+                        <span>${item.timestamp}</span>
+                    </div>
+                `;
+                itemDiv.onclick = () => loadFromHistory(index);
+                historyListEl.appendChild(itemDiv);
+            });
+        }
 
-            resultHeader.innerHTML = `
-                <b>Analisis alamat Objek yang dinilai:</b> ${objekAlamat}
-                <br> <b>Desa :</b> ${objekDesa || '-'}
-                <br> <b>ZNT : </b>${objekKodeZNT || '-'} 
-                <br> <b>Grade:</b> ${objekGrade}
-            `;
+        // Fungsi Load data lama ke Form
+        function loadFromHistory(index) {
+            const data = historyAnalisis[index];
+            if (!data) return;
 
-            let index = 0;
-            let totalNilaiWajarObjekZNT = 0;
-            let jumlahPembanding = 0;
+            // Isi input field
+            alamatObjekInput.value = data.objek.alamat;
+            alamatDesaInput.value = data.objek.desa;
+            kodeZNTInput.value = data.objek.znt;
+            gradeInputDropdown.value = data.objek.grade;
 
-            selectedIds.forEach(id => {
-                const data = propertis.find(p => String(p.id) === String(id));
-                if (!data) return;
-
-                // Ambil grade pembanding
-                const pembandingGrade = parseGrade(data.grade);
-
-                // Lokasi (bakal grade) sesuai permintaan: (grade_objek - pembanding) * 0.1
-                const lokasiBakalGrade = (objekGrade - pembandingGrade) * 0.1;
-
-                // Bentuk tanah: Normal -> 0, else dari dataReferensi.penyesuaian_bentuk_tanah
-                const bentukTanahAdjusted = (String(data.bentukTanah).toLowerCase().includes('normal')) ? 0 :
-                    (dataReferensiLocal.penyesuaian_bentuk_tanah !== undefined ? parseFloat(dataReferensiLocal.penyesuaian_bentuk_tanah) : 0);
-
-                // Ketinggian dari jalan: ketinggian * penyesuaian_ketinggian (referensi)
-                // ✅ Ketinggian dari jalan (hasil: ketinggian_dari_jalan × penyesuaian dari tabel referensi)
-                let ketinggianValue = parseFloat(data.ketinggianDariJalan);
-                if (isNaN(ketinggianValue)) ketinggianValue = 0;
-
-                let penyesuaianKetinggianRef = parseFloat(dataReferensiLocal.penyesuaian_ketinggian);
-                if (isNaN(penyesuaianKetinggianRef)) penyesuaianKetinggianRef = 0;
-
-                const ketinggianAdjusted = Number((ketinggianValue * penyesuaianKetinggianRef).toFixed(4)); // simpan 4 digit agar nilai kecil tidak hilang
-
-
-                // Kepemilikan: SHM -> 0, else penyesuaian_sertifikat
-                const kepemilikanAdjusted = (String(data.dataKepemilikan).toUpperCase() === 'SHM') ? 0 :
-                    (dataReferensiLocal.penyesuaian_sertifikat !== undefined ? parseFloat(dataReferensiLocal.penyesuaian_sertifikat) : 0);
-
-                // Nilai wajar bumi per m2: ambil dari perhitungan Formulir 2 (fungsi computeNilaiWajarBumiPerM2)
-                const nilaiWajarBumiM2 = computeNilaiWajarBumiPerM2(data);
-
-                // Nilai wajar objek / ZNT: sesuai permintaan — jumlah komponen (bukan (1+...))
-                // nilai_wajar_objek_znt = nilaiWajarBumiM2 * lokasi + nilaiWajarBumiM2 * bentuk + nilaiWajarBumiM2 * ketinggian + nilaiWajarBumiM2 * kepemilikan
-                const nilaiWajarObjekZNT = nilaiWajarBumiM2 * (lokasiBakalGrade + bentukTanahAdjusted + ketinggianAdjusted + kepemilikanAdjusted);
-
-                // Tambah ke total untuk rekonsiliasi
-                totalNilaiWajarObjekZNT += nilaiWajarObjekZNT;
-                jumlahPembanding++;
-
-                // Nilai Wajar Transaksi per m2 (dari Formulir 2) -- tampilkan angka terformat
-                const hargaWajarPerM2Display = isFinite(nilaiWajarBumiM2) ? nilaiWajarBumiM2 : 0;
-
-                // Tulis baris tabel
-                const row = analisisTableBody5.insertRow();
-                row.insertCell().textContent = ++index;
-                row.insertCell().textContent = data.alamatObjekPajak || "-";
-                row.insertCell().textContent = data.blokNop || "-";
-                row.insertCell().textContent = data.kodeZNT || "-";
-                row.insertCell().textContent = data.grade || "-";
-                row.insertCell().textContent = new Intl.NumberFormat('id-ID').format(hargaWajarPerM2Display);
-                row.insertCell().textContent = lokasiBakalGrade.toFixed(2);
-                row.insertCell().textContent = bentukTanahAdjusted.toFixed(2);
-                row.insertCell().textContent = ketinggianAdjusted.toFixed(4);
-                row.insertCell().textContent = kepemilikanAdjusted.toFixed(2);
-                row.insertCell().textContent = new Intl.NumberFormat('id-ID').format(nilaiWajarObjekZNT);
-                // nilai rekonsiliasi sementara: rata-rata sampai baris ini (kita bisa juga tampilkan akhir setelah loop)
-                const rataRataSaatIni = jumlahPembanding > 0 ? totalNilaiWajarObjekZNT / jumlahPembanding : 0;
-                row.insertCell().textContent = new Intl.NumberFormat('id-ID').format(rataRataSaatIni);
+            // Isi dropdown pembanding
+            data.comparators.forEach((id, i) => {
+                if (alamatSelects[i]) alamatSelects[i].value = id;
             });
 
-            // Jika ingin menampilkan nilai rekonsiliasi final di footer / baris tersendiri:
-            if (jumlahPembanding === 0) {
-                // nothing
-            } else {
-                // (Opsional) tambahkan baris ringkasan di bawah tabel (hapus komentar jika ingin)
-                /*
-                const summaryRow = analisisTableBody5.insertRow();
-                summaryRow.insertCell().textContent = '';
-                summaryRow.insertCell().textContent = 'Rata-rata Rekonsiliasi';
-                summaryRow.insertCell().colSpan = 9; // sesuaikan spasi
-                summaryRow.insertCell().textContent = '';
-                summaryRow.insertCell().textContent = new Intl.NumberFormat('id-ID').format(totalNilaiWajarObjekZNT / jumlahPembanding);
-                */
+            // Jalankan analisis (tanpa simpan ulang ke riwayat untuk menghindari duplikat)
+            runAnalysisLogic(false);
+
+            // Tandai item aktif di sidebar
+            document.querySelectorAll('.history-item').forEach((el, i) => {
+                el.classList.toggle('active-history', i === index);
+            });
+        }
+
+        // Logika Inti Analisis (dipisah agar bisa dipanggil saat load history)
+        function runAnalysisLogic(isNewSave = true) {
+            analisisTableBody5.innerHTML = "";
+
+            const objekAlamat = alamatObjekInput.value.trim();
+            const objekDesa = alamatDesaInput.value.trim();
+            const objekKodeZNT = kodeZNTInput.value.trim();
+            const objekGrade = parseInt(gradeInputDropdown.value) || 0;
+
+            if (!objekAlamat || objekGrade <= 0) {
+                alert("Harap lengkapi Alamat dan Grade Lokasi.");
+                return;
             }
+
+            const selectedIds = alamatSelects.map(s => s.value).filter(id => id);
+            if (selectedIds.length === 0) {
+                alert("Harap pilih minimal satu pembanding.");
+                return;
+            }
+
+            // Simpan ke Riwayat jika ini adalah klik tombol "Nilai" baru
+            if (isNewSave) {
+                const newHistory = {
+                    timestamp: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
+                    objek: { alamat: objekAlamat, desa: objekDesa, znt: objekKodeZNT, grade: objekGrade },
+                    comparators: selectedIds
+                };
+                historyAnalisis.unshift(newHistory); // Tambah ke paling atas
+                if (historyAnalisis.length > 20) historyAnalisis.pop(); // Batasi 20 riwayat
+                localStorage.setItem('historyAnalisisZNT', JSON.stringify(historyAnalisis));
+                renderHistoryList();
+            }
+
+            // --- Bagian Render Tabel (sama seperti logika Anda sebelumnya) ---
+            let indexTabel = 0;
+            let totalNilaiWajar = 0;
+            let counter = 0;
+
+            const dataProperti = JSON.parse(localStorage.getItem('propertiData')) || [];
+            const dataReferensiLocal = JSON.parse(localStorage.getItem('dataReferensi')) || {};
+
+            selectedIds.forEach(id => {
+                const item = dataProperti.find(p => String(p.id) === String(id));
+                if (!item) return;
+
+                const pembandingGrade = parseGrade(item.grade);
+                const lokasiBakalGrade = (objekGrade - pembandingGrade) * 0.1;
+                const bentukTanahAdj = (String(item.bentukTanah).toLowerCase().includes('normal')) ? 0 : (parseFloat(dataReferensiLocal.penyesuaian_bentuk_tanah) || 0);
+
+                let ketinggianVal = parseFloat(item.ketinggianDariJalan) || 0;
+                let penyesuaianTinggiRef = parseFloat(dataReferensiLocal.penyesuaian_ketinggian) || 0;
+                const ketinggianAdj = Number((ketinggianVal * penyesuaianTinggiRef).toFixed(4));
+
+                const kepemilikanAdj = (String(item.dataKepemilikan).toUpperCase() === 'SHM') ? 0 : (parseFloat(dataReferensiLocal.penyesuaian_sertifikat) || 0);
+
+                const nwbM2 = computeNilaiWajarBumiPerM2(item);
+                const nilaiWajarObjek = nwbM2 * (lokasiBakalGrade + bentukTanahAdj + ketinggianAdj + kepemilikanAdj);
+
+                totalNilaiWajar += nilaiWajarObjek;
+                counter++;
+
+                const row = analisisTableBody5.insertRow();
+                row.innerHTML = `
+                    <td class="px-4 py-2 border text-center">${++indexTabel}</td>
+                    <td class="px-4 py-2 border">${item.alamatObjekPajak}</td>
+                    <td class="px-4 py-2 border">${item.blokNop}</td>
+                    <td class="px-4 py-2 border text-center">${item.kodeZNT}</td>
+                    <td class="px-4 py-2 border text-center">${item.grade}</td>
+                    <td class="px-4 py-2 border text-right">${new Intl.NumberFormat('id-ID').format(nwbM2)}</td>
+                    <td class="px-4 py-2 border text-center">${lokasiBakalGrade.toFixed(2)}</td>
+                    <td class="px-4 py-2 border text-center">${bentukTanahAdj.toFixed(2)}</td>
+                    <td class="px-4 py-2 border text-center">${ketinggianAdj.toFixed(4)}</td>
+                    <td class="px-4 py-2 border text-center">${kepemilikanAdj.toFixed(2)}</td>
+                    <td class="px-4 py-2 border text-right font-bold">${new Intl.NumberFormat('id-ID').format(nilaiWajarObjek)}</td>
+                    <td class="px-4 py-2 border text-right bg-blue-50">${new Intl.NumberFormat('id-ID').format(totalNilaiWajar / counter)}</td>
+                `;
+            });
+
+            // Sinkronisasi ke Google Sheets (jika ada fungsi ini)
+            if (typeof syncAnalisisToGoogleSheets === 'function') {
+                syncAnalisisToGoogleSheets(objekAlamat, objekDesa, objekKodeZNT, objekGrade);
+            }
+        }
+
+        // Event Listener Tombol Nilai
+        showAnalysisBtn.onclick = () => runAnalysisLogic(true);
+
+        // Hapus Riwayat
+        if (clearHistoryBtn) {
+            clearHistoryBtn.onclick = () => {
+                if (confirm("Hapus semua riwayat analisis?")) {
+                    historyAnalisis = [];
+                    localStorage.removeItem('historyAnalisisZNT');
+                    renderHistoryList();
+                    analisisTableBody5.innerHTML = '<tr><td colspan="12" class="px-6 py-10 text-center text-gray-400 italic">Riwayat dihapus.</td></tr>';
+                }
+            };
+        }
+
+        // Helper functions (Pastikan fungsi ini ada/diambil dari kode lama Anda)
+        function parseGrade(val) {
+            const d = String(val).match(/\d+/);
+            return d ? parseInt(d[0]) : 0;
+        }
+
+        function computeNilaiWajarBumiPerM2(item) {
+            const jAdj = typeof calculateJenisAdjusted === 'function' ? calculateJenisAdjusted(item.jenis) : 1;
+            const wAdj = typeof calculateWaktuAdjusted === 'function' ? calculateWaktuAdjusted(item.tanggal) : 1;
+            const hWajar = typeof calculateHargaWajar === 'function' ? calculateHargaWajar(item.hargaTransaksi, jAdj, wAdj) : item.hargaTransaksi;
+            return item.luas > 0 ? (hWajar - (item.nilaiDBKB || 0)) / item.luas : 0;
+        }
+
+        // Inisialisasi tampilan Riwayat saat pertama kali buka
+        renderHistoryList();
+
+        // Populate dropdown alamat pembanding (diambil dari kode asli Anda)
+        const dataPropertiCache = JSON.parse(localStorage.getItem('propertiData')) || [];
+        alamatSelects.forEach(select => {
+            select.innerHTML = '<option value="">-- Pilih Alamat Pembanding --</option>';
+            dataPropertiCache.forEach(p => {
+                const opt = document.createElement("option");
+                opt.value = p.id;
+                opt.textContent = p.alamatObjekPajak;
+                select.appendChild(opt);
+            });
+        });
+    }
+    if (exportAnalisisXLSXBtn) {
+        exportAnalisisXLSXBtn.addEventListener("click", () => {
+            exportTableToXLSX(
+                "analisisDataTable5",
+                `hasil_analisis_znt_${new Date().toISOString().slice(0, 10)}.xlsx`
+            );
         });
     }
 });
@@ -742,10 +870,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // =========================================================================
 
 function calculateJenisAdjusted(jenis) {
-    const penyesuaianPenawaran = dataReferensi.penyesuaian_penawaran !== undefined ? dataReferensi.penyesuaian_penawaran : 0.9;
-    const penyesuaianLelang = dataReferensi.penyesuaian_lelang !== undefined ? dataReferensi.penyesuaian_lelang : 0.75;
-    const penyesuaianAgunan = dataReferensi.penyesuaian_agunan !== undefined ? dataReferensi.penyesuaian_agunan : 0.85;
-    const penyesuaianKeterangan = dataReferensi.penyesuaian_keterangan !== undefined ? dataReferensi.penyesuaian_keterangan : 0.95;
+    const penyesuaianPenawaran = dataReferensi.penyesuaian_penawaran !== undefined ? parseFloat(dataReferensi.penyesuaian_penawaran) : 0.9;
+    const penyesuaianLelang = dataReferensi.penyesuaian_lelang !== undefined ? parseFloat(dataReferensi.penyesuaian_lelang) : 0.75;
+    const penyesuaianAgunan = dataReferensi.penyesuaian_agunan !== undefined ? parseFloat(dataReferensi.penyesuaian_agunan) : 0.85;
+    const penyesuaianKeterangan = dataReferensi.penyesuaian_keterangan !== undefined ? parseFloat(dataReferensi.penyesuaian_keterangan) : 0.95;
 
     switch (jenis) {
         case 'Penawaran': return penyesuaianPenawaran;
@@ -757,7 +885,7 @@ function calculateJenisAdjusted(jenis) {
 }
 
 function calculateDataKepemilikanAdjusted(kepemilikan) {
-    const penyesuaianSertifikat = dataReferensi.penyesuaian_sertifikat !== undefined ? dataReferensi.penyesuaian_sertifikat : 0.9;
+    const penyesuaianSertifikat = dataReferensi.penyesuaian_sertifikat !== undefined ? parseFloat(dataReferensi.penyesuaian_sertifikat) : 0.9;
 
     if (kepemilikan === 'SHM') {
         return 0;
@@ -769,7 +897,7 @@ function calculateDataKepemilikanAdjusted(kepemilikan) {
 }
 
 function calculateKetinggianAdjusted(ketinggianDariJalan, luas, hargaWajar) {
-    const hargaUrug = dataReferensi.harga_tanah_urug !== undefined ? dataReferensi.harga_tanah_urug : 200000;
+    const hargaUrug = dataReferensi.harga_tanah_urug !== undefined ? parseFloat(dataReferensi.harga_tanah_urug) : 200000;
 
     if (ketinggianDariJalan > 0 && hargaWajar > 0) {
         const adjustedValue = (ketinggianDariJalan * hargaUrug) * luas / hargaWajar;
@@ -779,7 +907,7 @@ function calculateKetinggianAdjusted(ketinggianDariJalan, luas, hargaWajar) {
 }
 
 function calculateBentukTanahAdjusted(bentukTanah) {
-    const penyesuaianBentukTanah = dataReferensi.penyesuaian_bentuk_tanah !== undefined ? dataReferensi.penyesuaian_bentuk_tanah : 0.9;
+    const penyesuaianBentukTanah = dataReferensi.penyesuaian_bentuk_tanah !== undefined ? parseFloat(dataReferensi.penyesuaian_bentuk_tanah) : 0.9;
 
     if (bentukTanah === 'Normal') {
         return 0;
@@ -791,7 +919,7 @@ function calculateBentukTanahAdjusted(bentukTanah) {
 }
 
 function calculateWaktuAdjusted(tanggalString) {
-    const kenaikanPerBulan = dataReferensi.kenaikan_per_bulan !== undefined ? dataReferensi.kenaikan_per_bulan : 0;
+    const kenaikanPerBulan = dataReferensi.kenaikan_per_bulan !== undefined ? parseFloat(dataReferensi.kenaikan_per_bulan) : 0;
     const currentDate = new Date();
     const inputDate = new Date(tanggalString);
 
@@ -836,21 +964,21 @@ function calculateHargaWajarform3(
     ketinggianAdjusted,
     kepemilikanAdjusted
 ) {
-  // Hitung setiap komponen penyesuaian
-  const penyesuaianLokasi3 = selisihNilai * lokasiBakalGrade;
-  const penyesuaianBentukTanah3 = selisihNilai * bentukTanahAdjusted;
-  const penyesuaianKetinggianTanah3 = selisihNilai * ketinggianAdjusted;
-  const penyesuaianKepemilikan3 = selisihNilai * kepemilikanAdjusted;
+    // Hitung setiap komponen penyesuaian
+    const penyesuaianLokasi3 = selisihNilai * lokasiBakalGrade;
+    const penyesuaianBentukTanah3 = selisihNilai * bentukTanahAdjusted;
+    const penyesuaianKetinggianTanah3 = selisihNilai * ketinggianAdjusted;
+    const penyesuaianKepemilikan3 = selisihNilai * kepemilikanAdjusted;
 
-  // Terapkan rumus untuk mendapatkan Nilai Wajar Objek/ZNT3
-  const nilaiWajarObjek3 =
-    selisihNilai -
-    penyesuaianLokasi3 +
-    penyesuaianBentukTanah3 +
-    penyesuaianKetinggianTanah3 +
-    penyesuaianKepemilikan3;
+    // Terapkan rumus untuk mendapatkan Nilai Wajar Objek/ZNT3
+    const nilaiWajarObjek3 =
+        selisihNilai -
+        penyesuaianLokasi3 +
+        penyesuaianBentukTanah3 +
+        penyesuaianKetinggianTanah3 +
+        penyesuaianKepemilikan3;
 
-  return nilaiWajarObjek3;
+    return nilaiWajarObjek3;
 }
 
 // --- Fungsi Ekspor Tabel ke CSV ---
@@ -858,7 +986,7 @@ function exportTableToCSV(tableId, filename) {
     const table = document.getElementById(tableId);
     if (!table) {
         // Menggunakan modal kustom sebagai pengganti alert
-        createModal(`Tabel dengan ID "${tableId}" tidak ditemukan.`, () => {});
+        createModal(`Tabel dengan ID "${tableId}" tidak ditemukan.`, () => { });
         return;
     }
 
@@ -891,69 +1019,40 @@ function exportTableToCSV(tableId, filename) {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
 }
+// ================= EXPORT TABLE TO XLSX (ANALISIS ZNT) =================
+function exportTableToXLSX(tableId, filename) {
+    const table = document.getElementById(tableId);
+    if (!table) {
+        createModal(`Tabel dengan ID "${tableId}" tidak ditemukan.`, () => {});
+        return;
+    }
 
+    // Clone tabel agar tidak ganggu tampilan asli
+    const clonedTable = table.cloneNode(true);
+
+    // Bersihkan styling
+    clonedTable.querySelectorAll("th, td").forEach(cell => {
+        cell.removeAttribute("class");
+        cell.style = "";
+    });
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.table_to_sheet(clonedTable);
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Hasil Analisis ZNT");
+    XLSX.writeFile(workbook, filename);
+}
+
+// ================= BUTTON HANDLER =================
 document.addEventListener("DOMContentLoaded", () => {
-  // --- HOME (index.html) ---
-  if (propertiForm) {
-    populateGradeDropdown();
-    initializeMap();
-    loadReferenceData();
-    loadFromGoogleSheets(); // Ambil data dari Sheets saat load
-    referenceInputs.forEach(input => input.addEventListener('change', saveReferenceData));
-    if (exportHomeTableBtn) {
-      exportHomeTableBtn.addEventListener('click', () => {
-        exportTableToCSV('propertiDataTable', 'data_properti_input.csv');
-      });
+    const exportBtn = document.getElementById("exportAnalisisXLSX");
+
+    if (exportBtn) {
+        exportBtn.addEventListener("click", () => {
+            exportTableToXLSX(
+                "analisisDataTable5",
+                `hasil_analisis_znt_${new Date().toISOString().slice(0, 10)}.xlsx`
+            );
+        });
     }
-  }
-
-  // --- FORMULIR 2 ---
-  if (document.getElementById("analisisDataTable")) {
-    dataReferensi = JSON.parse(localStorage.getItem('dataReferensi')) || {};
-    propertis = JSON.parse(localStorage.getItem('propertiData')) || [];
-    
-    // 🔹 Render langsung dari localStorage dulu agar tampil instan
-    renderAnalisisTable();
-
-    // 🔹 Lalu ambil versi terbaru dari Google Sheets (jaga sinkronisasi)
-    loadFromGoogleSheets();
-
-    if (exportTable2Btn) {
-      exportTable2Btn.addEventListener('click', () => {
-        exportTableToCSV('analisisDataTable', 'analisis_nilai_pasar_wajar.csv');
-      });
-    }
-  }
-
-  // --- FORMULIR 3 ---
-  if (analisisTable3) {
-    dataReferensi = JSON.parse(localStorage.getItem('dataReferensi')) || {};
-    propertis = JSON.parse(localStorage.getItem('propertiData')) || [];
-
-    // 🔹 Render langsung dari localStorage
-    renderAnalisisTable3();
-
-    // 🔹 Sinkronkan lagi dari Google Sheets
-    loadFromGoogleSheets();
-
-    if (gradeInputJudul) {
-      gradeInputJudul.addEventListener('change', renderAnalisisTable3);
-      gradeInputJudul.addEventListener('input', renderAnalisisTable3);
-    }
-    if (exportTable3Btn) {
-      exportTable3Btn.addEventListener('click', () => {
-        exportTableToCSV('analisisDataTable3', 'analisis_rekonsiliasi.csv');
-      });
-    }
-  }
 });
-
-
-
-
-
-
-
-
-
-
